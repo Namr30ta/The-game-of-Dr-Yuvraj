@@ -1,0 +1,967 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#080d1c">
+<title>Dentist vs Sugar — Smile Defender</title>
+<style>
+  :root {
+    color-scheme: dark;
+    --bg: #080d1c;
+    --panel: rgba(17, 26, 51, .82);
+    --line: rgba(180, 203, 255, .15);
+    --text: #f5f7ff;
+    --muted: #9da9c8;
+    --cyan: #62efff;
+    --mint: #8dffca;
+    --pink: #ff72b6;
+    --gold: #ffd978;
+    --danger: #ff7189;
+  }
+  * { box-sizing: border-box; }
+  html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; }
+  body {
+    background: var(--bg); color: var(--text);
+    font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    -webkit-font-smoothing: antialiased; user-select: none;
+  }
+  button { font: inherit; color: inherit; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+  button:focus-visible { outline: 3px solid var(--cyan); outline-offset: 4px; }
+  .app {
+    position: relative; width: 100%; height: 100%; isolation: isolate; overflow: hidden;
+    background:
+      radial-gradient(ellipse at 50% 110%, rgba(50, 108, 189, .27), transparent 55%),
+      radial-gradient(ellipse at 5% 5%, rgba(77, 52, 153, .23), transparent 39%),
+      linear-gradient(145deg, #090e20 0%, #101831 50%, #071426 100%);
+  }
+  .app::before, .app::after { content: ""; position: absolute; pointer-events: none; z-index: -1; border-radius: 50%; filter: blur(1px); }
+  .app::before { width: 38vw; height: 38vw; min-width: 270px; min-height: 270px; top: -22vw; right: -7vw; background: rgba(63, 229, 255, .08); box-shadow: 0 0 100px 30px rgba(63,229,255,.035); }
+  .app::after { width: 34vw; height: 34vw; bottom: -23vw; left: -8vw; background: rgba(154, 104, 255, .10); box-shadow: 0 0 90px 25px rgba(154,104,255,.04); }
+  .screen { position: absolute; inset: 0; display: none; overflow: hidden; }
+  .screen.active { display: flex; }
+  .eyebrow { display:none; color:var(--cyan); text-transform:uppercase; letter-spacing:.23em; font-size:11px; font-weight:850; }
+  .brand { display: flex; align-items: center; gap: 11px; font-size: 12px; letter-spacing: .15em; font-weight: 850; text-transform: uppercase; color: #cbd5f1; }
+  .brand-mark { width: 35px; height: 35px; border-radius: 12px; display: grid; place-items: center; font-size: 20px; background: linear-gradient(145deg, rgba(98,239,255,.2), rgba(141,255,202,.08)); border: 1px solid rgba(98,239,255,.32); box-shadow: 0 0 22px rgba(98,239,255,.08), inset 0 1px rgba(255,255,255,.12); }
+  .topline { position: absolute; top: 24px; left: 30px; right: 30px; display: flex; align-items: center; justify-content: space-between; gap: 16px; z-index: 5; }
+  .icon-button { height: 42px; min-width: 42px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 0 13px; background: rgba(255,255,255,.045); border: 1px solid var(--line); border-radius: 13px; color: #dce5ff; transition: background .18s, transform .18s, border-color .18s; }
+  .icon-button:hover { background: rgba(255,255,255,.09); border-color: rgba(98,239,255,.35); transform: translateY(-1px); }
+  .sound-glyph { font-size:17px; }
+
+  .header-controls { display:flex; align-items:center; gap:8px; }
+
+  .home-screen { align-items:center; justify-content:center; padding:80px 24px 26px; text-align:center; overflow-y:auto; overscroll-behavior:contain; }
+  .home-layout { width:min(900px,100%); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:0; }
+  .hero-copy { animation:rise-in .7s cubic-bezier(.2,.8,.2,1) both; display:flex; flex-direction:column; align-items:center; }
+  .hero-copy h1 { font-size:clamp(43px,7vw,78px); line-height:.98; letter-spacing:-.065em; margin:12px 0 18px; font-weight:950; }
+  .hero-copy h1 .vs { color: var(--pink); font-size: .57em; letter-spacing: -.02em; vertical-align: 9%; margin: 0 .04em; }
+  .hero-copy h1 .sugar { display: block; color: transparent; background: linear-gradient(90deg, #ff84bd 3%, #ffd17b 53%, #ff8d80 93%); -webkit-background-clip: text; background-clip: text; }
+  .hero-description { display:none; max-width:430px; color:#b7c2de; font-size:clamp(14px,1.5vw,17px); line-height:1.75; margin:0; }
+  .hero-description strong { color: #f6f8ff; font-weight: 750; }
+  .made-for { display:inline-grid; gap:7px; justify-items:center; margin-top:5px; padding:5px 10px; border:0; background:transparent; color:#ffe7a7; border-radius:0; font-size:12px; letter-spacing:.02em; }
+  .dedication-title { font-size:clamp(13px,2vw,17px); font-weight:950; letter-spacing:.08em; color:#ffd166; }
+  .dedication-message { margin:0; font-size:15px; line-height:1.35; font-style:italic; color:#ffb6c1; letter-spacing:.015em; }
+  .primary-button { position:relative; isolation:isolate; border:0; border-radius:12px; padding:16px 36px; margin-top:25px; background: linear-gradient(105deg, #65f0f2, #91ffcc); color: #071a25; font-size: 14px; font-weight: 950; text-transform: uppercase; letter-spacing: .12em; box-shadow: 0 10px 30px rgba(75,237,226,.17), inset 0 1px rgba(255,255,255,.75); transition: transform .18s, box-shadow .18s, filter .18s; }
+  .primary-button:hover { transform: translateY(-3px); box-shadow: 0 15px 38px rgba(75,237,226,.25), inset 0 1px rgba(255,255,255,.75); filter: brightness(1.04); }
+  .primary-button:active { transform: translateY(0) scale(.99); }
+  .primary-button .arrow { display: inline-block; margin-left: 18px; font-size: 19px; vertical-align: -1px; }
+  .quick-stats { display:flex; justify-content:center; align-items:flex-start; gap:clamp(18px,3.2vw,34px); width:min(420px,calc(100vw - 38px)); margin:25px auto 0; }
+  .quick-stat { display:grid; gap:4px; flex:1; min-width:0; }
+  .quick-stat strong { font-size:18px; letter-spacing:-.03em; white-space:nowrap; }
+  .quick-stat span { color:#8f9cbd; text-transform:uppercase; letter-spacing:.10em; font-size:9px; line-height:1.45; font-weight:800; }
+  .hero-visual { display:none; }
+  .hero-ring { position: absolute; width: min(36vw, 410px); aspect-ratio: 1; border-radius: 50%; border: 1px solid rgba(117,226,255,.17); box-shadow: 0 0 65px rgba(54,196,255,.07), inset 0 0 55px rgba(54,196,255,.035); }
+  .hero-ring::before, .hero-ring::after { content: ""; position: absolute; border-radius: 50%; inset: 17px; border: 1px dashed rgba(151,173,236,.16); animation: slow-spin 36s linear infinite; }
+  .hero-ring::after { inset: 48px; border-style: solid; border-color: rgba(98,239,255,.10); animation-direction: reverse; animation-duration: 48s; }
+  .hero-tooth { position: relative; z-index: 1; font-size: clamp(120px, 17vw, 205px); line-height: 1; filter: drop-shadow(0 21px 25px rgba(75,207,255,.19)); animation: tooth-float 3.8s ease-in-out infinite; }
+  .hero-tooth::after { content: ""; }
+  .orbit-food { position: absolute; z-index: 2; width: 58px; height: 58px; display: grid; place-items: center; border-radius: 20px; font-size: 30px; background: rgba(18,30,57,.8); border: 1px solid rgba(187,206,255,.17); box-shadow: 0 12px 25px rgba(0,0,0,.18), inset 0 1px rgba(255,255,255,.08); animation: bob 3.2s ease-in-out infinite; }
+  .orbit-one { top: 14%; left: 8%; transform: rotate(-10deg); }
+  .orbit-two { top: 20%; right: 5%; animation-delay: -.7s; transform: rotate(9deg); }
+  .orbit-three { right: 7%; bottom: 15%; animation-delay: -1.5s; transform: rotate(8deg); }
+  .orbit-four { left: 5%; bottom: 16%; animation-delay: -2.1s; transform: rotate(-9deg); }
+  .mini-tag { position: absolute; z-index: 3; border: 1px solid rgba(117,244,221,.2); background: rgba(10,27,42,.84); border-radius: 12px; padding: 10px 13px; box-shadow: 0 12px 30px rgba(0,0,0,.2); }
+  .mini-tag strong { display: block; color: var(--mint); font-size: 13px; }
+  .mini-tag span { color: #94a6c6; font-size: 10px; }
+  .tag-top { top: 9%; right: 12%; }
+  .tag-bottom { bottom: 9%; left: 13%; }
+  .home-bottom { display:none; }
+
+  /* Arena */
+  .game-screen { background: radial-gradient(ellipse at 50% 38%, rgba(54,123,177,.17), transparent 54%), linear-gradient(180deg, #0e1830, #0a1527 72%, #08111f); }
+  .arena-grid { position: absolute; inset: 0; pointer-events: none; opacity: .30; background-image: linear-gradient(rgba(127,171,234,.06) 1px, transparent 1px), linear-gradient(90deg, rgba(127,171,234,.06) 1px, transparent 1px); background-size: 54px 54px; mask-image: linear-gradient(to bottom, transparent 0%, #000 25%, #000 80%, transparent 100%); }
+  .arena-glow { position: absolute; left: 50%; bottom: -250px; width: min(850px, 100vw); height: 430px; transform: translateX(-50%); border-radius: 50%; pointer-events: none; background: rgba(67,204,242,.07); filter: blur(35px); }
+  .game-topbar { position: absolute; z-index: 20; top: 18px; left: 22px; right: 22px; display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; }
+  .score-panel, .game-actions { display:flex; align-items:center; gap:10px; }
+  .hud-card { min-width: 112px; padding: 10px 15px; border: 1px solid var(--line); border-radius: 15px; background: rgba(10,19,38,.72); backdrop-filter: blur(12px); box-shadow: 0 10px 28px rgba(0,0,0,.12), inset 0 1px rgba(255,255,255,.035); }
+  .hud-label { color: #8e9cbf; font-size: 9px; text-transform: uppercase; letter-spacing: .17em; font-weight: 850; }
+  .hud-value { margin-top: 4px; font-size: 23px; line-height: 1; font-variant-numeric: tabular-nums; font-weight: 900; letter-spacing: -.04em; }
+  .hud-value.score-value { color: var(--cyan); text-shadow: 0 0 20px rgba(98,239,255,.25); }
+  .combo-chip { display: none; align-items: center; gap: 7px; padding: 10px 12px; border: 1px solid rgba(255,217,120,.28); background: rgba(72,51,15,.42); color: var(--gold); border-radius: 13px; font-size: 12px; font-weight: 900; animation: chip-pop .24s ease-out; }
+  .combo-chip.visible { display: flex; }
+  .game-actions { justify-content: flex-end; }
+  .game-actions .icon-button { width: 43px; padding: 0; }
+  .arena-message { position: absolute; z-index: 3; top: 112px; left: 50%; width: min(90%, 440px); transform: translateX(-50%); text-align: center; pointer-events: none; }
+  .arena-message strong { display: block; font-size: 14px; letter-spacing: .07em; text-transform: uppercase; }
+  .arena-message span { display: block; margin-top: 5px; color: #8191b3; font-size: 11px; letter-spacing: .02em; }
+  .falling-layer { position: absolute; inset: 0; z-index: 5; overflow: hidden; pointer-events: none; }
+  .falling-food { position: absolute; top: -90px; display: grid; place-items: center; width: 64px; height: 64px; border: 1px solid rgba(255,255,255,.19); border-radius: 22px; background: linear-gradient(145deg, rgba(255,255,255,.14), rgba(255,255,255,.035)); box-shadow: 0 12px 27px rgba(0,0,0,.19), inset 0 1px rgba(255,255,255,.18); font-size: 34px; cursor: crosshair; pointer-events: auto; touch-action: none; will-change: transform, translate; animation: fall-down var(--fall-duration, 5s) linear forwards, sway var(--sway-duration, 2.7s) ease-in-out infinite alternate; transition: filter .14s, border-color .14s, background .14s; }
+  .falling-food.sugar { border-color: rgba(255,129,173,.35); box-shadow: 0 9px 28px rgba(250,94,152,.10), inset 0 1px rgba(255,255,255,.2); }
+  .falling-food.healthy { border-color: rgba(141,255,202,.3); box-shadow: 0 9px 28px rgba(87,255,180,.08), inset 0 1px rgba(255,255,255,.2); }
+  .falling-food:hover { filter: brightness(1.23); border-color: rgba(255,255,255,.65); }
+  .falling-food:active { filter: brightness(1.4); }
+  .falling-food::after { content: ""; position: absolute; inset: -7px; border: 1px solid rgba(255,255,255,.10); border-radius: 26px; opacity: .65; pointer-events: none; }
+  .tooth-platform { position: absolute; z-index: 4; bottom: -13px; left: 50%; width: min(610px, 88vw); height: 160px; transform: translateX(-50%); border-radius: 50% 50% 0 0; border-top: 1px solid rgba(100,230,255,.28); background: radial-gradient(ellipse at 50% 0%, rgba(98,239,255,.15), rgba(31,76,112,.13) 46%, rgba(8,16,32,.0) 73%); box-shadow: 0 -15px 44px rgba(55,186,224,.05); pointer-events: none; }
+  .tooth-platform::before { content: ""; position: absolute; top: 16px; left: 13%; right: 13%; height: 1px; background: linear-gradient(90deg, transparent, rgba(98,239,255,.28), transparent); }
+  .tooth-area { position: absolute; z-index: 6; left: 50%; bottom: 34px; transform: translateX(-50%); display: flex; align-items: center; flex-direction: column; pointer-events: none; }
+  .tooth-label { margin-bottom: 0; color: #8fb5ca; letter-spacing: .2em; text-transform: uppercase; font-size: 9px; font-weight: 850; text-shadow: 0 2px 5px #06111c; }
+  .tooth-character { position:relative; display:inline-grid; place-items:center; width:1em; height:1.13em; font-size:clamp(94px,12vw,132px); line-height:1.13; filter:drop-shadow(0 0 20px rgba(112,236,255,.2)) drop-shadow(0 14px 12px rgba(0,0,0,.25)); animation:tooth-breathe 3.2s ease-in-out infinite; transform-origin:bottom center; transition:opacity .2s ease; }
+  .game-screen.tooth-transferring .tooth-character { opacity:0; }
+  .tooth-emoji { position:relative; z-index:0; line-height:1.13; }
+  .tooth-brown-tint { position:absolute; z-index:1; pointer-events:none; inset:9% 10% 10%; opacity:0; clip-path:polygon(10% 5%,29% 0,42% 5%,51% 7%,61% 3%,74% 0,90% 5%,99% 20%,97% 39%,88% 53%,79% 64%,74% 86%,63% 100%,54% 98%,48% 79%,41% 99%,31% 98%,22% 83%,19% 61%,9% 49%,2% 28%); background:linear-gradient(145deg,rgba(163,104,58,.9),rgba(113,62,31,.93) 48%,rgba(69,35,19,.96)); mix-blend-mode:multiply; transition:opacity .25s ease; }
+  .tooth-character[data-decay="1"] .tooth-brown-tint { opacity:.2; }
+  .tooth-character[data-decay="2"] .tooth-brown-tint { opacity:.52; }
+  .tooth-character[data-decay="3"] .tooth-brown-tint { opacity:.82; }
+  .tooth-character.final-decay .tooth-brown-tint { animation:tooth-tint-bloom .84s ease-out forwards; }
+  @keyframes tooth-tint-bloom { from { opacity:.18; filter:brightness(1.18); } 60% { opacity:.68; filter:brightness(.92); } to { opacity:.94; filter:brightness(.76); } }
+  .decay-cavity { position:absolute; z-index:2; width:.14em; height:.12em; border-radius:55% 45% 60% 40%; background:radial-gradient(circle at 35% 30%,#71472e 0%,#452517 65%,#28160f 100%); box-shadow:inset 1px 1px 2px rgba(0,0,0,.55),0 0 4px rgba(24,12,6,.25); opacity:0; pointer-events:none; transition:opacity .22s,width .22s,height .22s,transform .22s; }
+  .cavity-one { left:30%; top:39%; transform:rotate(-14deg); }
+  .cavity-two { right:29%; top:47%; width:.17em; height:.14em; transform:rotate(12deg); }
+  .decay-crack { position:absolute; z-index:2; left:47%; top:45%; width:.13em; height:.25em; border-left:2px solid #59301f; border-bottom:2px solid #59301f; transform:rotate(-17deg); opacity:0; pointer-events:none; transition:opacity .22s; }
+  .tooth-character[data-decay="1"] .cavity-one { opacity:.92; }
+  .tooth-character[data-decay="2"] .cavity-one { opacity:1; width:.19em; height:.16em; }
+  .tooth-character[data-decay="2"] .cavity-two { opacity:.9; }
+  .tooth-character[data-decay="3"] .cavity-one { opacity:1; width:.22em; height:.18em; }
+  .tooth-character[data-decay="3"] .cavity-two { opacity:1; width:.20em; height:.17em; }
+  .tooth-character[data-decay="3"] .decay-crack { opacity:1; }
+  .tooth-character[data-decay="1"]::after, .tooth-character[data-decay="2"]::after, .tooth-character[data-decay="3"]::after, .tooth-character.final-decay::after { opacity:0; animation:none; }
+  .tooth-character[data-decay="2"], .tooth-character[data-decay="3"] { filter:drop-shadow(0 0 20px rgba(255,113,137,.18)) drop-shadow(0 14px 12px rgba(0,0,0,.28)); }
+  /* Freeze the whole game world while the pause or resume-countdown overlay is active. */
+  .game-screen.paused .falling-food,
+  .game-screen.paused .feedback,
+  .game-screen.paused .particle,
+  .game-screen.paused .tooth-character { animation-play-state:paused !important; }
+  .game-screen.paused .falling-layer { pointer-events:none; }
+  .tooth-character::after { content: "✦"; position: absolute; top: 16%; right: -4%; color: #bcfff9; font-size: 20px; text-shadow: 0 0 15px rgba(98,239,255,.8); animation: twinkle 2s ease-in-out infinite; }
+  .tooth-area.hit .tooth-character { animation: tooth-hit .25s ease-out; }
+  .tooth-status { position: absolute; z-index: 1; bottom: 8px; left: 50%; transform: translateX(-50%); color: rgba(157,180,220,.46); font-size: 9px; white-space: nowrap; text-transform: uppercase; letter-spacing: .18em; }
+  .feedback { position: absolute; z-index: 12; pointer-events: none; left: 0; top: 0; font-weight: 1000; font-size: 21px; color: var(--mint); text-shadow: 0 2px 14px rgba(71,255,196,.4); animation: feedback-float .7s ease-out forwards; white-space: nowrap; }
+  .feedback.penalty { color: #ff8db5; text-shadow: 0 2px 14px rgba(255,76,142,.35); }
+  .particle { position: absolute; z-index: 11; pointer-events: none; left: 0; top: 0; width: 7px; height: 7px; border-radius: 50%; background: var(--particle-color, var(--cyan)); box-shadow: 0 0 12px var(--particle-color, var(--cyan)); animation: particle-burst .48s ease-out forwards; }
+  .screen-flash { position: absolute; z-index: 10; inset: 0; pointer-events: none; opacity: 0; background: radial-gradient(circle at var(--fx,50%) var(--fy,50%), rgba(95,255,225,.25), transparent 28%); }
+  .screen-flash.flash { animation: flash .28s ease-out; }
+  .center-overlay { position: absolute; z-index: 40; inset: 0; display: none; align-items: center; justify-content: center; padding: 24px; background: rgba(4,9,20,.68); backdrop-filter: blur(10px); }
+  .center-overlay.visible { display:flex; animation:overlay-in .2s ease-out; }
+  .resume-inline-countdown { display:grid; justify-items:center; max-height:0; opacity:0; overflow:hidden; padding:0 12px; transform:translateY(-7px) scale(.97); pointer-events:none; transition:max-height .34s cubic-bezier(.2,.8,.2,1),opacity .22s ease,transform .3s ease,padding .3s ease; }
+  .pauseOverlay-counting-down #resumeInlineCountdown { max-height:230px; opacity:1; padding:14px 12px 12px; transform:translateY(0) scale(1); }
+  #resumeInlineCountdown .countdown-kicker { color:var(--cyan); font-size:10px; font-weight:900; letter-spacing:.25em; }
+  #resumeInlineCountdown .countdown-number { min-height:96px; display:grid; place-items:center; margin:5px 0 8px; color:#f7fbff; font-size:88px; line-height:1; font-weight:950; font-variant-numeric:tabular-nums; text-shadow:0 0 35px rgba(98,239,255,.26); }
+  #resumeInlineCountdown .countdown-number.tick { animation:countdown-tick .48s cubic-bezier(.2,.8,.2,1) both; }
+  #resumeInlineCountdown p { margin:0; color:#aebad7; font-size:12px; }
+  .pauseOverlay-counting-down #pauseDescription,
+  .pauseOverlay-counting-down #pauseScoreBox,
+  .pauseOverlay-counting-down #pauseActions { max-height:0; opacity:0; margin:0; padding-top:0; padding-bottom:0; overflow:hidden; transform:translateY(-5px); pointer-events:none; visibility:hidden; }
+  #pauseDescription,#pauseScoreBox,#pauseActions { transition:opacity .18s ease,transform .22s ease,max-height .3s ease,margin .3s ease,padding .3s ease; }
+  @keyframes countdown-tick { 0% { opacity:.35; transform:scale(.76); } 60% { opacity:1; transform:scale(1.12); } 100% { opacity:1; transform:scale(1); } }
+  #gameOverOverlay .modal-card { transition:opacity .32s ease,transform .42s cubic-bezier(.2,.8,.2,1); }
+  #gameOverOverlay.transfer-pending .modal-card { opacity:0; transform:translateY(10px) scale(.96); pointer-events:none; }
+  #gameOverIcon { position:relative; display:grid; place-items:center; width:54px; height:54px; margin:0 auto; filter:drop-shadow(0 0 18px rgba(98,239,255,.17)); transform-origin:center; }
+  .broken-tooth-glyph { position:relative; z-index:0; font-size:42px; line-height:1; }
+  .broken-tooth-tint { position:absolute; z-index:1; inset:7% 10% 8%; opacity:0; clip-path:polygon(10% 5%,29% 0,42% 5%,51% 7%,61% 3%,74% 0,90% 5%,99% 20%,97% 39%,88% 53%,79% 64%,74% 86%,63% 100%,54% 98%,48% 79%,41% 99%,31% 98%,22% 83%,19% 61%,9% 49%,2% 28%); background:linear-gradient(145deg,#985b30,#71401f 48%,#482513); mix-blend-mode:multiply; transition:opacity .2s; }
+  .broken-tooth-cavity { position:absolute; z-index:2; right:17%; top:51%; width:7px; height:8px; border-radius:48% 56% 45% 55%; background:radial-gradient(circle at 30% 25%,#452515,#1f1009 74%); opacity:0; }
+  .broken-tooth-crack { position:absolute; z-index:3; left:48%; top:17%; width:7px; height:16px; border-left:2px solid #2d170d; border-bottom:2px solid #2d170d; transform:rotate(-18deg); opacity:0; }
+  #gameOverIcon.broken-tooth-icon { filter:drop-shadow(0 0 16px rgba(139,77,36,.35)); }
+  #gameOverIcon.broken-tooth-icon .broken-tooth-tint { opacity:.96; }
+  #gameOverIcon.broken-tooth-icon .broken-tooth-cavity,
+  #gameOverIcon.broken-tooth-icon .broken-tooth-crack { opacity:1; }
+  .broken-tooth-icon.land { animation:broken-tooth-land .42s cubic-bezier(.2,.8,.2,1) both; }
+  @keyframes broken-tooth-land { 0% { transform:scale(.62) rotate(-18deg); opacity:.4; } 65% { transform:scale(1.16) rotate(4deg); opacity:1; } 100% { transform:scale(1) rotate(0); opacity:1; } }
+  .tooth-character.final-decay { animation:tooth-terminal-shake .52s ease-in-out 1 both; }
+  .tooth-character.final-decay .tooth-emoji { animation:tooth-final-brown .86s cubic-bezier(.22,.7,.2,1) forwards; }
+  .tooth-character.final-decay .decay-cavity { animation:cavity-bloom .4s ease-out forwards; }
+  .tooth-character.final-decay .decay-crack { animation:crack-bloom .36s .1s ease-out forwards; }
+  @keyframes tooth-final-brown { 0% { filter:none; transform:scale(1); } 38% { filter:sepia(.35) saturate(1.2) brightness(.92); transform:scale(1.04); } 72% { filter:sepia(.62) saturate(1.6) brightness(.78) contrast(1.08); transform:scale(.97) rotate(-3deg); } 100% { filter:sepia(.72) saturate(1.8) brightness(.68) contrast(1.12); transform:scale(.94) rotate(2deg); } }
+  @keyframes tooth-terminal-shake { 0%,100% { transform:translateX(0) rotate(0); } 16%,48%,78% { transform:translateX(-4px) rotate(-2deg); } 32%,62%,90% { transform:translateX(4px) rotate(2deg); } }
+  @keyframes cavity-bloom { from { transform:scale(.4); opacity:.3; } to { transform:scale(1.12); opacity:1; } }
+  @keyframes crack-bloom { from { clip-path:inset(0 0 100% 0); opacity:0; } to { clip-path:inset(0); opacity:1; } }
+  .tooth-flight-clone { position:fixed !important; z-index:20001 !important; pointer-events:none !important; margin:0 !important; animation:none !important; transform-origin:center center !important; will-change:transform,filter,opacity; }
+
+  .modal-card { width: min(410px, 100%); border: 1px solid rgba(170,199,255,.2); border-radius: 24px; padding: 30px; text-align: center; background: linear-gradient(145deg, rgba(23,37,69,.98), rgba(12,22,43,.98)); box-shadow: 0 30px 80px rgba(0,0,0,.42), inset 0 1px rgba(255,255,255,.06); }
+  .modal-icon { font-size: 42px; filter: drop-shadow(0 0 18px rgba(98,239,255,.17)); }
+  .modal-card h2 { margin: 12px 0 8px; font-size: 30px; letter-spacing: -.04em; }
+  .modal-card p { margin: 0; color: #aebad7; line-height: 1.65; font-size: 13px; }
+  .modal-score { margin: 21px 0 4px; padding: 17px; border: 1px solid rgba(98,239,255,.18); border-radius: 16px; background: rgba(98,239,255,.055); }
+  .modal-score span { display: block; color: #91a4c8; font-size: 10px; letter-spacing: .18em; text-transform: uppercase; font-weight: 850; }
+  .modal-score strong { display: block; margin-top: 5px; color: var(--cyan); font-variant-numeric: tabular-nums; font-size: 37px; letter-spacing: -.05em; }
+  .modal-buttons { display: flex; flex-direction: column; gap: 10px; }
+  .modal-buttons .primary-button { width: 100%; margin-top: 17px; }
+  .secondary-button { width: 100%; margin-top: 0; padding: 13px 17px; border: 1px solid var(--line); border-radius: 13px; background: rgba(255,255,255,.04); color: #e1e8fb; font-weight: 800; font-size: 12px; letter-spacing: .06em; text-transform: uppercase; transition: background .15s; }
+  .secondary-button:hover { background: rgba(255,255,255,.09); }
+  .personal-best { width:min(330px, calc(100vw - 40px)); margin-top:16px; border:1px solid rgba(180,203,255,.16); border-radius:16px; overflow:hidden; background:rgba(13,23,45,.62); box-shadow:0 12px 30px rgba(0,0,0,.12); text-align:left; animation:best-card-in .35s .12s both; }
+  .best-toggle { display:flex; align-items:center; justify-content:space-between; gap:12px; width:100%; padding:12px 15px; border:0; background:transparent; text-align:left; }
+  .best-toggle-copy { display:grid; gap:4px; }
+  .best-toggle-label { color:#91a3c8; font-size:9px; font-weight:900; letter-spacing:.17em; }
+  .best-toggle strong { color:var(--cyan); font-size:22px; line-height:1; font-variant-numeric:tabular-nums; letter-spacing:-.04em; }
+  .best-chevron { color:#9caccb; font-size:22px; line-height:1; transition:transform .28s cubic-bezier(.2,.8,.2,1),color .2s; }
+  .personal-best.expanded .best-chevron { transform:rotate(180deg); color:var(--cyan); }
+  .best-details { max-height:0; opacity:0; overflow:hidden; margin-top:0; transform:translateY(-5px); transition:max-height .36s cubic-bezier(.2,.8,.2,1),opacity .24s ease,transform .3s ease,margin-top .3s ease; }
+  .best-details.open { max-height:360px; opacity:1; margin-top:0; transform:translateY(0); }
+  .best-details-inner { padding:0 14px 14px; }
+  .best-stats { display:grid; grid-template-columns:1fr 1fr; gap:8px; padding-top:3px; }
+  .best-stat { padding:10px; border:1px solid rgba(180,203,255,.10); border-radius:11px; background:rgba(255,255,255,.025); display:grid; gap:5px; }
+  .best-stat span { color:#91a0c1; font-size:9px; line-height:1.35; letter-spacing:.04em; }
+  .best-stat strong { color:#f4f7ff; font-size:17px; font-variant-numeric:tabular-nums; }
+  .best-explanation { margin:11px 0 0; color:#b8c5df; font-size:11px; line-height:1.55; }
+  .best-date { margin:7px 0 0; color:#7f8eae; font-size:10px; line-height:1.5; }
+  .reset-best-button { display:inline-block; width:auto; margin-top:12px; padding:10px 12px; border-color:rgba(255,113,137,.24); color:#ffb0bf; font-size:10px; }
+  @keyframes best-card-in { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }
+  .new-record { display: none; margin-top: 9px; color: var(--gold); font-weight: 850; text-transform: uppercase; font-size: 10px; letter-spacing: .16em; }
+  .new-record.visible { display: block; }
+  .toast { position: absolute; z-index: 25; left: 50%; top: 84px; transform: translate(-50%, -10px); opacity: 0; padding: 9px 14px; border: 1px solid rgba(255,217,120,.24); border-radius: 999px; background: rgba(38,31,21,.85); color: var(--gold); font-size: 11px; font-weight: 900; letter-spacing: .08em; pointer-events: none; white-space: nowrap; }
+  .toast.show { animation: toast-in 1.25s ease-out forwards; }
+  .aim-cursor { display: none; position: fixed; z-index: 100; left: 0; top: 0; width: 31px; height: 31px; border-radius: 50%; border: 1px solid rgba(98,239,255,.75); box-shadow: 0 0 18px rgba(98,239,255,.20); pointer-events: none; transform: translate(-50%,-50%); }
+  .aim-cursor::before, .aim-cursor::after { content: ""; position: absolute; background: rgba(98,239,255,.85); }
+  .aim-cursor::before { width: 1px; top: -5px; bottom: -5px; left: 50%; }
+  .aim-cursor::after { height: 1px; left: -5px; right: -5px; top: 50%; }
+  @media (pointer: fine) { .app.playing { cursor: none; } .app.playing .aim-cursor { display: block; } .app.playing button, .app.playing .falling-food { cursor: none; } }
+  .paused .falling-food { animation-play-state: paused; }
+
+  @keyframes rise-in { from { opacity: 0; transform: translateY(17px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes slow-spin { to { transform: rotate(360deg); } }
+  @keyframes tooth-float { 0%,100% { transform: translateY(-4px) rotate(-2deg); } 50% { transform: translateY(8px) rotate(2deg); } }
+  @keyframes bob { 0%,100% { translate: 0 0; } 50% { translate: 0 -10px; } }
+  @keyframes tooth-breathe { 0%,100% { transform: translateY(0) rotate(-1deg); } 50% { transform: translateY(-5px) rotate(1deg); } }
+  @keyframes tooth-hit { 0% { transform: scale(1); } 40% { transform: scale(1.12) rotate(-5deg); } 100% { transform: scale(1); } }
+  @keyframes twinkle { 0%,100% { opacity: .4; transform: scale(.7) rotate(0); } 50% { opacity: 1; transform: scale(1.2) rotate(45deg); } }
+  @keyframes fall-down { from { transform: translate3d(0,-10px,0) rotate(-8deg); } to { transform: translate3d(0,calc(100vh + 190px),0) rotate(24deg); } }
+  /* Animate with the compositor: margin-left causes layout work on every frame. */
+  @keyframes sway { from { translate: -8px 0; } to { translate: 8px 0; } }
+  @keyframes feedback-float { 0% { opacity: 0; transform: translate(-50%,0) scale(.7); } 15% { opacity: 1; transform: translate(-50%,-10px) scale(1.08); } 100% { opacity: 0; transform: translate(-50%,-58px) scale(.92); } }
+  @keyframes particle-burst { from { opacity: 1; transform: translate(0,0) scale(1); } to { opacity: 0; transform: translate(var(--dx),var(--dy)) scale(.1); } }
+  @keyframes flash { 0% { opacity: 1; } 100% { opacity: 0; } }
+  @keyframes overlay-in { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes chip-pop { from { transform: scale(.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+  @keyframes toast-in { 0% { opacity: 0; transform: translate(-50%,-10px); } 15%,75% { opacity: 1; transform: translate(-50%,0); } 100% { opacity: 0; transform: translate(-50%,-7px); } }
+  @media (max-width: 780px) {
+    .topline { top: 16px; left: 17px; right: 17px; }
+     .home-screen { padding:78px 18px 28px; align-items:center; overflow-y:auto; }
+    .home-layout { display:flex; flex-direction:column; gap:0; margin:auto 0; }
+    .hero-copy { position: relative; z-index: 2; text-align: center; }
+    .hero-copy h1 { font-size: clamp(41px, 10vw, 67px); margin-top: 12px; }
+    .hero-description { margin: 0 auto; max-width: 390px; font-size: 14px; }
+    .made-for { margin-top: 14px; justify-items: center; max-width: 100%; }
+    .dedication-title { font-size: 11px; letter-spacing: .09em; }
+    .dedication-message { font-size: 12px; }
+    .hero-visual { min-height: 250px; margin-top: -2px; }
+    .hero-ring { width: min(55vw, 280px); }
+    .hero-tooth { font-size: clamp(115px, 28vw, 165px); }
+    .orbit-food { width: 45px; height: 45px; border-radius: 15px; font-size: 24px; }
+    .tag-top { top: 0; right: 5%; }.tag-bottom { bottom: 1%; left: 5%; }
+    .mini-tag { padding: 7px 9px; }
+    .quick-stats { justify-content:space-between; margin-top:18px; gap:15px; width:min(370px,calc(100vw - 28px)); }
+    .quick-stat strong { font-size:17px; }
+    .quick-stat span { font-size:8px; letter-spacing:.06em; }
+    .primary-button { margin-top: 20px; padding: 15px 20px; }
+    .home-bottom { left: 17px; right: 17px; bottom: 9px; font-size: 8px; }
+    .game-topbar { top: 12px; left: 11px; right: 11px; gap: 6px; }
+    .score-panel { gap: 6px; }
+    .hud-card { min-width: 76px; padding: 9px 10px; border-radius: 12px; }
+    .hud-label { font-size: 8px; letter-spacing: .10em; }
+    .hud-value { font-size: 20px; }
+      .hearts { font-size: 14px; gap: 2px; }
+    .game-actions { gap: 5px; }
+    .game-actions .icon-button { width: 37px; min-width: 37px; height: 38px; border-radius: 11px; }
+    .combo-chip { position:absolute; top:116px; left:50%; transform:translateX(-50%); padding:7px 10px; font-size:10px; white-space:nowrap; }
+    .arena-message { top:151px; }
+    .arena-message strong { font-size: 12px; }
+    .arena-message span { font-size: 10px; }
+    .falling-food { width: 52px; height: 52px; border-radius: 18px; font-size: 27px; }
+    .tooth-area { bottom: 23px; }
+    .tooth-character { font-size: 105px; }
+    .tooth-label { font-size: 8px; }
+    .tooth-platform { height: 125px; }
+    .tooth-status { bottom: 3px; font-size: 7px; }
+    .toast { top:198px; font-size:10px; }
+  }
+  @media (max-height: 700px) {
+    .home-screen { justify-content:flex-start; padding-top:86px; }
+    .home-layout { margin:0 auto; }
+  }
+  @media (max-width: 390px) {
+    .hud-card { min-width: 67px; padding: 8px; }
+    .game-topbar { gap: 4px; }
+    .game-actions { gap: 3px; }
+    .game-actions .icon-button { width: 33px; min-width: 33px; }
+    .hero-visual { min-height: 215px; }
+    .home-bottom span:first-child { max-width: 140px; }
+  }
+  @media (max-height: 650px) and (min-width: 781px) {
+    .home-layout { transform: scale(.87); }
+    .hero-visual { min-height: 370px; }
+    .hero-tooth { font-size: 155px; }
+    .hero-ring { width: 330px; }
+    .home-bottom { bottom: 8px; }
+    .tooth-area { bottom: 15px; }
+    .tooth-character { font-size: 94px; }
+    .arena-message { top: 94px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; }
+  }
+</style>
+</head>
+<body>
+<div class="app" id="app">
+  <header class="topline">
+    <div class="brand"><div class="brand-mark">🦷</div><span>Smile Defender <span style="color:#68799f;font-weight:650">/ ARCADE</span></span></div>
+    <div class="header-controls">
+      <button class="icon-button" id="homeSoundBtn" aria-label="Toggle sound" title="Toggle sound"><span class="sound-glyph" id="homeSoundGlyph">♩</span><span id="homeSoundText" style="font-size:10px;letter-spacing:.1em;font-weight:850">SOUND OFF</span></button>
+    </div>
+  </header>
+
+  <section class="screen home-screen active" id="homeScreen" aria-label="Game start screen">
+    <div class="home-layout">
+      <div class="hero-copy">
+        <h1>DENTIST <span class="vs">VS</span><span class="sugar">SUGAR</span></h1>
+        <div class="made-for dedication" aria-label="A special game for Dr. Yuvraj. Made with love, just for you.">
+          <strong class="dedication-title">A SPECIAL GAME FOR DR. YUVRAJ</strong>
+          <em class="dedication-message">Made with ❤️, just for you!</em>
+        </div>
+        <button class="primary-button" id="startBtn">ENTER THE ARENA <span class="arrow">↗</span></button>
+        <div class="quick-stats" aria-label="How scoring works">
+          <div class="quick-stat"><strong>+10</strong><span>SUGAR SMASHED</span></div>
+          <div class="quick-stat"><strong>−20</strong><span>HEALTHY FOOD HIT</span></div>
+          <div class="quick-stat"><strong>3 🦷</strong><span>TOOTH DECAY LIMIT</span></div>
+        </div>
+
+        <section class="personal-best" id="personalBestCard" aria-label="Personal best">
+          <button class="best-toggle" id="bestToggle" aria-expanded="false" aria-controls="bestDetails">
+            <span class="best-toggle-copy">
+              <span class="best-toggle-label">PERSONAL BEST</span>
+              <strong id="homeBestValue">0000</strong>
+            </span>
+            <span class="best-chevron" aria-hidden="true">⌄</span>
+          </button>
+          <div class="best-details" id="bestDetails" aria-hidden="true">
+            <div class="best-details-inner">
+              <div class="best-stats">
+                <div class="best-stat"><span>Sugar smashed</span><strong id="bestSugarCount">—</strong></div>
+                <div class="best-stat"><span>Best streak</span><strong id="bestStreakCount">—</strong></div>
+                <div class="best-stat"><span>Best multiplier</span><strong id="bestMultiplierValue">—</strong></div>
+                <div class="best-stat"><span>Healthy food tapped</span><strong id="bestHealthyCount">—</strong></div>
+              </div>
+              <p class="best-explanation" id="bestRecordSummary">Sugar earns points. Longer streaks multiply your score.</p>
+              <p class="best-date" id="bestRecordDate">No record yet — start a game to set one.</p>
+              <button class="secondary-button reset-best-button" id="resetBestBtn" type="button">Reset personal best</button>
+            </div>
+          </div>
+        </section>
+      </div>
+    </div>
+  </section>
+
+  <section class="screen game-screen" id="gameScreen" aria-label="Game arena">
+    <div class="arena-grid"></div><div class="arena-glow"></div>
+    <div class="game-topbar">
+      <div class="score-panel">
+        <div class="hud-card"><div class="hud-label">Your score</div><div class="hud-value score-value" id="scoreValue">0000</div></div>
+        <div class="hud-card" style="min-width:83px"><div class="hud-label">Personal best</div><div class="hud-value" id="bestValue" style="font-size:19px">0000</div></div>
+      </div>
+      <div class="game-actions">
+        <div class="combo-chip" id="comboChip">⚡ <span id="comboText">2× COMBO</span></div>
+        <button class="icon-button" id="gameSoundBtn" aria-label="Toggle sound" title="Toggle sound"><span id="gameSoundGlyph">♩</span></button>
+        <button class="icon-button" id="pauseBtn" aria-label="Pause game" title="Pause game">Ⅱ</button>
+      </div>
+    </div>
+    <div class="arena-message"><strong id="arenaHeading">Protect that pearly white smile</strong><span id="arenaSubheading">Tap the sugar before it reaches the bottom.</span></div>
+    <div class="toast" id="toast">NICE SHOT!</div>
+    <div class="falling-layer" id="fallingLayer"></div>
+    <div class="screen-flash" id="screenFlash"></div>
+    <div class="tooth-platform"></div>
+    <div class="tooth-area" id="toothArea"><div class="tooth-label">Smile integrity</div><div class="tooth-character" id="toothCharacter" data-decay="0" role="img" aria-label="Tooth condition: healthy">
+        <span class="tooth-emoji" aria-hidden="true">🦷</span>
+        <span class="tooth-brown-tint" aria-hidden="true"></span>
+        <span class="decay-cavity cavity-one" aria-hidden="true"></span>
+        <span class="decay-cavity cavity-two" aria-hidden="true"></span>
+        <span class="decay-crack" aria-hidden="true"></span>
+      </div></div>
+    <div class="tooth-status" id="toothStatus">Defend the enamel · Keep the sugar away</div>
+    <div class="center-overlay" id="pauseOverlay" role="dialog" aria-modal="true" aria-labelledby="pauseTitle">
+      <div class="modal-card pause-modal-card" id="pauseModalCard">
+        <div class="modal-icon">⏸️</div>
+        <h2 id="pauseTitle">Take a breather</h2>
+        <p id="pauseDescription">Everything freezes while paused. Resume when you're ready.</p>
+        <div class="modal-score" id="pauseScoreBox"><span>Current score</span><strong id="pauseScore">0000</strong></div>
+        <div class="resume-inline-countdown" id="resumeInlineCountdown" aria-live="assertive" aria-atomic="true">
+          <div class="countdown-kicker">GET READY</div>
+          <div class="countdown-number" id="resumeCountdownNumber">3</div>
+          <p>Back to protecting that smile…</p>
+        </div>
+        <div class="modal-buttons" id="pauseActions">
+          <button class="primary-button" id="resumeBtn">Back to the action ↗</button>
+          <button class="secondary-button" id="pauseRestartBtn">Restart run</button>
+          <button class="secondary-button" id="pauseHomeBtn">Exit to main menu</button>
+        </div>
+      </div>
+    </div>
+    <div class="center-overlay" id="gameOverOverlay" role="dialog" aria-modal="true" aria-labelledby="gameOverTitle">
+      <div class="modal-card"><div class="modal-icon" id="gameOverIcon" aria-label="Broken tooth">
+        <span class="broken-tooth-glyph" aria-hidden="true">🦷</span>
+        <span class="broken-tooth-tint" aria-hidden="true"></span>
+        <span class="broken-tooth-cavity" aria-hidden="true"></span>
+        <span class="broken-tooth-crack" aria-hidden="true"></span>
+      </div><div class="eyebrow" id="gameOverEyebrow">RUN COMPLETE</div><h2 id="gameOverTitle">The smile survives!</h2><p id="gameOverMessage">Sugar tried. The dentist prevailed.</p><div class="modal-score"><span>Final score</span><strong id="finalScore">0</strong><div class="new-record" id="newRecord">✦ New personal best ✦</div></div><div class="modal-buttons"><button class="primary-button" id="playAgainBtn">Play again <span class="arrow">↗</span></button><button class="secondary-button" id="gameOverHomeBtn">Back to main menu</button></div></div>
+    </div>
+  </section>
+  <div class="aim-cursor" id="aimCursor" aria-hidden="true"></div>
+</div>
+<script>
+(() => {
+  'use strict';
+  const $ = (id) => document.getElementById(id);
+  const app = $('app'), homeScreen = $('homeScreen'), gameScreen = $('gameScreen'), siteHeader = document.querySelector('.topline');
+  const fallingLayer = $('fallingLayer'), scoreValue = $('scoreValue'), bestValue = $('bestValue');
+  const pauseOverlay = $('pauseOverlay'), gameOverOverlay = $('gameOverOverlay');
+  const sugarFoods = ['🍭','🍬','🍩','🧁','🍰','🍫','🍪','🍦'];
+  const healthyFoods = ['🍎','🥦','🥕','🍓','🍐','🥑','🫐'];
+  let score = 0, lives = 3, combo = 0, best = readBest();
+  let bestDetails = readBestDetails();
+  let runStats = createRunStats();
+  let running = false, paused = false, soundEnabled = false;
+  let sugarTimer = null, healthyTimer = null, audioContext = null, resumeCountdownTimer = null, gameOverTransitionTimer = null, toothFlightTimer = null;
+  let gameEnding = false;
+  let activeTargets = new Set(), runToken = 0, lastComboTime = 0, recordAtRunStart = best;
+  const MAX_TARGETS = 8;
+  bestValue.textContent = formatScore(best);
+  updateSoundUI();
+  updateHomeBestUI();
+
+  function readBest() {
+    try { return Math.max(0, Number(localStorage.getItem('smileDefenderBest')) || 0); } catch (_) { return 0; }
+  }
+  function saveBest(value) {
+    try { localStorage.setItem('smileDefenderBest', String(value)); } catch (_) { /* Private browsing may block storage. */ }
+  }
+  function readBestDetails() {
+    try {
+      const parsed = JSON.parse(localStorage.getItem('smileDefenderBestDetails') || 'null');
+      if (!parsed || typeof parsed !== 'object') return null;
+      return {
+        score: Math.max(0, Number(parsed.score) || 0),
+        sugarSmashed: Math.max(0, Number(parsed.sugarSmashed) || 0),
+        maxStreak: Math.max(0, Number(parsed.maxStreak) || 0),
+        highestMultiplier: Math.max(1, Number(parsed.highestMultiplier) || 1),
+        healthyHits: Math.max(0, Number(parsed.healthyHits) || 0),
+        achievedAt: typeof parsed.achievedAt === 'string' ? parsed.achievedAt : ''
+      };
+    } catch (_) { return null; }
+  }
+  function saveBestDetails(details) {
+    bestDetails = details;
+    try { localStorage.setItem('smileDefenderBestDetails', JSON.stringify(details)); } catch (_) { /* Storage can be unavailable. */ }
+  }
+  function createRunStats() {
+    return { sugarSmashed: 0, healthyHits: 0, maxStreak: 0, highestMultiplier: 1 };
+  }
+  function formatScore(n) { return String(Math.max(0, n)).padStart(4, '0'); }
+  function updateHomeBestUI() {
+    $('resetBestBtn').textContent = 'Reset personal best';
+    $('homeBestValue').textContent = formatScore(best);
+    $('bestSugarCount').textContent = bestDetails ? String(bestDetails.sugarSmashed) : '—';
+    $('bestStreakCount').textContent = bestDetails ? String(bestDetails.maxStreak) : '—';
+    $('bestMultiplierValue').textContent = bestDetails ? `${bestDetails.highestMultiplier}×` : '—';
+    $('bestHealthyCount').textContent = bestDetails ? String(bestDetails.healthyHits) : '—';
+    if (best > 0 && bestDetails && bestDetails.score > 0) {
+      $('bestRecordSummary').textContent = `Record score ${formatScore(best)}. Sugar is worth 10 points; a 4+ streak earns 2×, and an 8+ streak earns 3×. Tapping healthy food or missing sugar breaks the streak.`;
+      if (bestDetails.achievedAt) {
+        const date = new Date(bestDetails.achievedAt);
+        $('bestRecordDate').textContent = Number.isNaN(date.getTime())
+          ? 'Record details saved on this device.'
+          : `Record details saved ${date.toLocaleDateString(undefined, { day:'numeric', month:'short', year:'numeric' })}.`;
+      } else {
+        $('bestRecordDate').textContent = 'This score was saved before run details were tracked.';
+      }
+    } else if (best > 0) {
+      $('bestRecordSummary').textContent = `Your saved personal best is ${formatScore(best)}. Detailed statistics will appear when you set a new record.`;
+      $('bestRecordDate').textContent = 'An older record is stored on this device.';
+    } else {
+      $('bestRecordSummary').textContent = 'Sugar is worth 10 points. A 4+ streak earns 2×, and an 8+ streak earns 3×. Avoid healthy food and stop sugar before it reaches the bottom.';
+      $('bestRecordDate').textContent = 'No personal best yet — start a game to set one.';
+    }
+  }
+  function setScreen(screen) {
+    siteHeader.style.display = screen === 'home' ? 'flex' : 'none';
+    homeScreen.classList.toggle('active', screen === 'home');
+    gameScreen.classList.toggle('active', screen === 'game');
+    app.classList.toggle('playing', screen === 'game' && running && !paused);
+    if (screen === 'home') updateHomeBestUI();
+  }
+  function updateSoundUI() {
+    const glyph = soundEnabled ? '♫' : '♩';
+    $('homeSoundGlyph').textContent = glyph;
+    $('gameSoundGlyph').textContent = glyph;
+    $('homeSoundText').textContent = soundEnabled ? 'SOUND ON' : 'SOUND OFF';
+    $('homeSoundBtn').setAttribute('aria-pressed', String(soundEnabled));
+    $('gameSoundBtn').setAttribute('aria-pressed', String(soundEnabled));
+  }
+  function toggleSound() {
+    soundEnabled = !soundEnabled;
+    if (soundEnabled) ensureAudio();
+    updateSoundUI();
+    if (soundEnabled) playTone(620, .07, 'sine', .035);
+  }
+  function ensureAudio() {
+    if (!audioContext) {
+      const Ctx = window.AudioContext || window.webkitAudioContext;
+      if (Ctx) { try { audioContext = new Ctx(); } catch (_) { audioContext = null; } }
+    }
+    if (audioContext && audioContext.state === 'suspended') audioContext.resume().catch(() => {});
+  }
+  function playTone(freq, duration = .10, type = 'sine', volume = .04, endFreq = null) {
+    if (!soundEnabled) return;
+    ensureAudio(); if (!audioContext) return;
+    try {
+      const osc = audioContext.createOscillator(), gain = audioContext.createGain();
+      const now = audioContext.currentTime;
+      osc.type = type; osc.frequency.setValueAtTime(freq, now);
+      if (endFreq) osc.frequency.exponentialRampToValueAtTime(Math.max(20, endFreq), now + duration);
+      gain.gain.setValueAtTime(volume, now);
+      gain.gain.exponentialRampToValueAtTime(.001, now + duration);
+      osc.connect(gain); gain.connect(audioContext.destination); osc.start(now); osc.stop(now + duration + .015);
+    } catch (_) { /* Audio is an optional layer, never a gameplay dependency. */ }
+  }
+  function startGame() {
+    if (resumeCountdownTimer !== null) clearTimeout(resumeCountdownTimer);
+    if (gameOverTransitionTimer !== null) clearTimeout(gameOverTransitionTimer);
+    if (toothFlightTimer !== null) clearTimeout(toothFlightTimer);
+    resumeCountdownTimer = gameOverTransitionTimer = toothFlightTimer = null;
+    gameEnding = false;
+    document.querySelectorAll('.tooth-flight-clone').forEach(el => el.remove());
+    $('toothCharacter').classList.remove('final-decay');
+    $('gameOverIcon').classList.remove('land', 'broken-tooth-icon');
+    $('gameOverEyebrow').style.display = '';
+    gameOverOverlay.classList.remove('transfer-pending'); 
+    pauseOverlay.classList.remove('counting-down', 'pauseOverlay-counting-down');
+    clearTimers();
+    cleanupTargets();
+    runToken++;
+    score = 0; lives = 3; combo = 0; lastComboTime = 0; recordAtRunStart = best; runStats = createRunStats();
+    running = true; paused = false;
+    gameScreen.classList.remove('paused', 'tooth-transferring');
+    app.classList.add('playing');
+    scoreValue.textContent = formatScore(score); bestValue.textContent = formatScore(best);
+    updateToothDecay();
+    $('comboChip').classList.remove('visible');
+    $('toothArea').classList.remove('hit');
+    $('toothStatus').textContent = 'Enamel intact · Avoid the falling sugar';
+    $('arenaHeading').textContent = 'Protect that pearly white smile';
+    $('arenaSubheading').textContent = 'Tap the sugar before it reaches the bottom.';
+    $('pauseScore').textContent = formatScore(score);
+    pauseOverlay.classList.remove('visible'); gameOverOverlay.classList.remove('visible');
+    setScreen('game');
+    scheduleSugar(650); scheduleHealthy(1450);
+    playTone(480, .08, 'sine', .035); setTimeout(() => { if (running && !paused) playTone(720, .09, 'sine', .03); }, 90);
+  }
+  function clearTimers() {
+    if (sugarTimer !== null) clearTimeout(sugarTimer);
+    if (healthyTimer !== null) clearTimeout(healthyTimer);
+    sugarTimer = healthyTimer = null;
+  }
+  function cleanupTargets() {
+    activeTargets.forEach(target => target.remove()); activeTargets.clear();
+    fallingLayer.replaceChildren();
+    document.querySelectorAll('.feedback, .particle').forEach(el => el.remove());
+  }
+  function scheduleSugar(delay = nextSugarDelay()) {
+    if (!running || paused) return;
+    sugarTimer = setTimeout(() => {
+      if (!running || paused) return;
+      if (activeTargets.size < MAX_TARGETS) createTarget('sugar');
+      scheduleSugar(nextSugarDelay());
+    }, delay);
+  }
+  function scheduleHealthy(delay = nextHealthyDelay()) {
+    if (!running || paused) return;
+    healthyTimer = setTimeout(() => {
+      if (!running || paused) return;
+      if (activeTargets.size < MAX_TARGETS) createTarget('healthy');
+      scheduleHealthy(nextHealthyDelay());
+    }, delay);
+  }
+  function nextSugarDelay() { return Math.max(570, 1160 - Math.floor(score / 30) * 38); }
+  function nextHealthyDelay() { return Math.max(1150, 1780 - Math.floor(score / 70) * 35); }
+  function fallDuration(type) {
+    const base = type === 'sugar' ? 5.5 : 6.3;
+    return Math.max(type === 'sugar' ? 2.65 : 3.3, base - Math.floor(score / 60) * .24 + Math.random() * .55);
+  }
+  function createTarget(type) {
+    if (!running || paused || activeTargets.size >= MAX_TARGETS) return;
+    const node = document.createElement('button');
+    const isSugar = type === 'sugar';
+    node.type = 'button';
+    node.className = `falling-food ${type}`;
+    node.textContent = (isSugar ? sugarFoods : healthyFoods)[Math.floor(Math.random() * (isSugar ? sugarFoods : healthyFoods).length)];
+    node.setAttribute('aria-label', isSugar ? 'Sugar target — tap to smash' : 'Healthy food — do not tap');
+    const width = window.innerWidth;
+    const min = width < 600 ? 6 : 5, max = width < 600 ? 88 : 91;
+    node.style.left = `${min + Math.random() * (max - min)}%`;
+    node.style.setProperty('--fall-duration', `${fallDuration(type)}s`);
+    node.style.setProperty('--sway-duration', `${2.1 + Math.random() * 1.7}s`);
+    node.style.animationDelay = `0s, ${-Math.random() * 2}s`;
+    const token = runToken;
+    const resolveTarget = event => {
+      if (!running || paused || token !== runToken || node.dataset.resolved) return;
+      if (event.type === 'pointerdown') {
+        // Respond on pointer-down rather than waiting for click synthesis on touch devices.
+        if (event.pointerType === 'mouse' && event.button !== 0) return;
+        event.preventDefault();
+      } else if (event.type === 'click' && event.detail !== 0) {
+        // Pointer input is already handled above; keep click for keyboard activation only.
+        return;
+      }
+      node.dataset.resolved = 'true';
+      const rect = node.getBoundingClientRect();
+      if (isSugar) hitSugar(node, rect); else hitHealthy(node, rect);
+    };
+    node.addEventListener('pointerdown', resolveTarget, { passive: false });
+    node.addEventListener('click', resolveTarget);
+    node.addEventListener('animationend', event => {
+      if (event.animationName !== 'fall-down' || node.dataset.resolved) return;
+      node.dataset.resolved = 'true';
+      activeTargets.delete(node); node.remove();
+      if (isSugar && running && !paused && token === runToken) missSugar();
+    });
+    activeTargets.add(node); fallingLayer.appendChild(node);
+  }
+  function hitSugar(node, rect) {
+    activeTargets.delete(node); node.remove();
+    const now = performance.now();
+    combo = now - lastComboTime < 2300 ? combo + 1 : 1;
+    lastComboTime = now;
+    const multiplier = combo >= 8 ? 3 : combo >= 4 ? 2 : 1;
+    const points = 10 * multiplier;
+    runStats.sugarSmashed++;
+    runStats.maxStreak = Math.max(runStats.maxStreak, combo);
+    runStats.highestMultiplier = Math.max(runStats.highestMultiplier, multiplier);
+    score += points; scoreValue.textContent = formatScore(score);
+    $('comboText').textContent = combo >= 8 ? `${multiplier}× COMBO · ON FIRE!` : combo >= 4 ? `${multiplier}× COMBO` : `${combo} STREAK`;
+    $('comboChip').classList.toggle('visible', combo >= 2);
+    if (combo >= 2) { const chip = $('comboChip'); chip.classList.remove('visible'); void chip.offsetWidth; chip.classList.add('visible'); }
+    showFeedback(rect.left + rect.width / 2, rect.top + rect.height / 2, `+${points}${multiplier > 1 ? `  ×${multiplier}` : ''}`);
+    burst(rect.left + rect.width / 2, rect.top + rect.height / 2, '#72f5d0', 8);
+    flashAt(rect.left + rect.width / 2, rect.top + rect.height / 2);
+    playTone(multiplier > 1 ? 820 : 610, .105, 'triangle', .045, multiplier > 1 ? 1180 : 380);
+    if (combo === 4 || combo === 8 || combo === 12) showToast(combo >= 8 ? 'UNSTOPPABLE! ✦' : 'SWEET STREAK! ⚡');
+    if (score > best) {
+      best = score;
+      bestValue.textContent = formatScore(best);
+      saveBest(best);
+      saveBestDetails({
+        score: best,
+        sugarSmashed: runStats.sugarSmashed,
+        maxStreak: runStats.maxStreak,
+        highestMultiplier: runStats.highestMultiplier,
+        healthyHits: runStats.healthyHits,
+        achievedAt: new Date().toISOString()
+      });
+      updateHomeBestUI();
+    }
+    if (score >= 50 && score - points < 50) { $('arenaHeading').textContent = 'Now we’re smiling!'; $('arenaSubheading').textContent = 'Careful — sugar is getting faster.'; showToast('LEVEL UP · SPEED INCREASED'); }
+  }
+  function hitHealthy(node, rect) {
+    activeTargets.delete(node); node.remove();
+    runStats.healthyHits++;
+    score = Math.max(0, score - 20); scoreValue.textContent = formatScore(score); combo = 0; lastComboTime = 0;
+    $('comboChip').classList.remove('visible');
+    showFeedback(rect.left + rect.width / 2, rect.top + rect.height / 2, '−20 · OOPS!', true);
+    burst(rect.left + rect.width / 2, rect.top + rect.height / 2, '#ff84b4', 6);
+    playTone(230, .15, 'sawtooth', .025, 110);
+    $('toothCharacter').animate([{transform:'rotate(0deg)'},{transform:'rotate(-8deg) scale(.94)'},{transform:'rotate(0deg)'}], {duration:300, easing:'ease-out'});
+  }
+  function updateToothDecay() {
+    const damage = Math.max(0, Math.min(3, 3 - lives));
+    const tooth = $('toothCharacter');
+    tooth.dataset.decay = String(damage);
+    const condition = damage === 0 ? 'healthy' : damage === 1 ? 'slightly damaged' : damage === 2 ? 'badly damaged' : 'depleted';
+    tooth.setAttribute('aria-label', `Tooth condition: ${condition}`);
+  }
+  function missSugar() {
+    if (gameEnding || !running || paused) return;
+    lives = Math.max(0, lives - 1);
+    updateToothDecay();
+    combo = 0; lastComboTime = 0; $('comboChip').classList.remove('visible');
+    $('toothArea').classList.remove('hit'); void $('toothArea').offsetWidth; $('toothArea').classList.add('hit');
+    $('toothStatus').textContent = lives === 2 ? 'Enamel weakened · Two more misses end the run' : lives === 1 ? 'Enamel damaged · One more miss ends the run' : 'Enamel depleted · The sugar has won';
+    showToast(lives === 2 ? 'SUGAR GOT THROUGH!' : lives === 1 ? 'CRITICAL TOOTH DAMAGE!' : 'TOOTH DECAY COMPLETE!');
+    playTone(190, .2, 'triangle', .05, 75);
+    if (lives <= 0) beginFinalDecay();
+  }
+  function beginFinalDecay() {
+    if (gameEnding) return;
+    gameEnding = true;
+    running = false;
+    paused = false;
+    clearTimers();
+    app.classList.remove('playing');
+    gameScreen.classList.remove('paused');
+    pauseOverlay.classList.remove('visible', 'pauseOverlay-counting-down');
+    pauseOverlay.classList.remove('counting-down');
+    cleanupTargets();
+    const tooth = $('toothCharacter');
+    tooth.dataset.decay = '3';
+    tooth.classList.remove('final-decay');
+    void tooth.offsetWidth;
+    tooth.classList.add('final-decay');
+    playTone(120, .34, 'triangle', .075, 48);
+    if (gameOverTransitionTimer !== null) clearTimeout(gameOverTransitionTimer);
+    // Let the full brown decay and crack animation complete before showing the result.
+    gameOverTransitionTimer = setTimeout(() => {
+      gameOverTransitionTimer = null;
+      if (gameEnding) endGame();
+    }, 900);
+  }
+  function endGame() {
+    if (!gameEnding) return;
+    running = false; paused = false; clearTimers();
+    app.classList.remove('playing');
+    cleanupTargets();
+    $('finalScore').textContent = formatScore(score);
+    $('newRecord').classList.toggle('visible', score > recordAtRunStart && score > 0);
+    $('gameOverEyebrow').style.display = 'none';
+    $('gameOverIcon').classList.add('broken-tooth-icon');
+    $('gameOverIcon').classList.remove('land');
+    $('gameOverTitle').textContent = 'The sugar got through!';
+    $('gameOverMessage').textContent = 'Every great dentist gets another shot. Ready for a rematch?';
+
+    const source = $('toothCharacter');
+    const from = source.getBoundingClientRect();
+    gameScreen.classList.add('tooth-transferring');
+    gameOverOverlay.classList.remove('transfer-pending');
+    gameOverOverlay.classList.add('visible', 'transfer-pending');
+
+    // The game-over card occupies its final layout while invisible. Fly a single lightweight clone
+    // of the brown tooth from the arena into the modal's tooth icon, then reveal the card.
+    const target = $('gameOverIcon').getBoundingClientRect();
+    const clone = source.cloneNode(true);
+    clone.removeAttribute('id');
+    clone.classList.add('tooth-flight-clone', 'final-decay');
+    clone.classList.remove('hit');
+    clone.style.left = `${from.left}px`;
+    clone.style.top = `${from.top}px`;
+    clone.style.width = `${from.width}px`;
+    clone.style.height = `${from.height}px`;
+    clone.style.fontSize = getComputedStyle(source).fontSize;
+    clone.style.transform = 'none';
+    clone.style.opacity = '1';
+    clone.style.animation = 'none';
+    const cloneEmoji = clone.querySelector('.tooth-emoji');
+    if (cloneEmoji) {
+      cloneEmoji.style.animation = 'none';
+      cloneEmoji.style.filter = 'sepia(.72) saturate(1.8) brightness(.68) contrast(1.12)';
+    }
+    const cloneTint = clone.querySelector('.tooth-brown-tint');
+    if (cloneTint) { cloneTint.style.animation = 'none'; cloneTint.style.opacity = '.94'; }
+    clone.querySelectorAll('.decay-cavity, .decay-crack').forEach(mark => { mark.style.animation = 'none'; mark.style.opacity = '1'; });
+    document.body.appendChild(clone);
+
+    requestAnimationFrame(() => {
+      const dx = target.left + target.width / 2 - (from.left + from.width / 2);
+      const dy = target.top + target.height / 2 - (from.top + from.height / 2);
+      const scale = Math.max(.18, Math.min(.5, target.width / Math.max(from.width, 1)));
+      clone.style.transition = 'transform .68s cubic-bezier(.22,.72,.22,1), opacity .68s ease, filter .5s ease';
+      clone.style.transform = `translate(${dx}px, ${dy}px) scale(${scale})`;
+      clone.style.opacity = '.94';
+    });
+    let finished = false;
+    const finishTransfer = () => {
+      if (finished) return;
+      finished = true;
+      if (toothFlightTimer !== null) clearTimeout(toothFlightTimer);
+      toothFlightTimer = null;
+      clone.remove();
+      if (!gameEnding) return;
+      gameOverOverlay.classList.remove('transfer-pending');
+      $('gameOverIcon').classList.add('land');
+    };
+    clone.addEventListener('transitionend', event => {
+      if (event.target === clone && event.propertyName === 'transform') finishTransfer();
+    });
+    toothFlightTimer = setTimeout(finishTransfer, 760);
+    playTone(330, .23, 'sine', .04, 165);
+  }
+  function cancelResumeCountdown(returnToPause = true) {
+    if (resumeCountdownTimer !== null) {
+      clearTimeout(resumeCountdownTimer);
+      resumeCountdownTimer = null;
+    }
+    pauseOverlay.classList.remove('pauseOverlay-counting-down', 'counting-down');
+    if (returnToPause && running && !gameEnding) {
+      paused = true;
+      gameScreen.classList.add('paused');
+      app.classList.remove('playing');
+      $('pauseScore').textContent = formatScore(score);
+      pauseOverlay.classList.add('visible');
+    }
+  }
+  function pauseGame() {
+    if (!running || gameEnding) return;
+    if (paused) {
+      // If the app is backgrounded during countdown, return to the same pause dialog.
+      if (resumeCountdownTimer !== null) cancelResumeCountdown(true);
+      return;
+    }
+    paused = true;
+    clearTimers();
+    app.classList.remove('playing');
+    gameScreen.classList.add('paused');
+    $('pauseScore').textContent = formatScore(score);
+    pauseOverlay.classList.remove('counting-down', 'pauseOverlay-counting-down');
+    pauseOverlay.classList.add('visible');
+  }
+  function resumeGame() {
+    if (!running || !paused || gameEnding || resumeCountdownTimer !== null) return;
+    const countdownNumber = $('resumeCountdownNumber');
+    let count = 3;
+    pauseOverlay.classList.add('visible', 'counting-down', 'pauseOverlay-counting-down');
+
+    function showCount(value) {
+      countdownNumber.textContent = String(value);
+      countdownNumber.classList.remove('tick');
+      void countdownNumber.offsetWidth;
+      countdownNumber.classList.add('tick');
+    }
+    function tick() {
+      if (!running || !paused || gameEnding) {
+        resumeCountdownTimer = null;
+        pauseOverlay.classList.remove('counting-down', 'pauseOverlay-counting-down');
+        return;
+      }
+      if (document.hidden) {
+        cancelResumeCountdown(true);
+        return;
+      }
+      count -= 1;
+      if (count <= 0) {
+        resumeCountdownTimer = null;
+        pauseOverlay.classList.remove('counting-down', 'pauseOverlay-counting-down', 'visible');
+        paused = false;
+        gameScreen.classList.remove('paused');
+        app.classList.add('playing');
+        clearTimers();
+        scheduleSugar(650);
+        scheduleHealthy(1250);
+        return;
+      }
+      showCount(count);
+      resumeCountdownTimer = setTimeout(tick, 1000);
+    }
+
+    showCount(count);
+    resumeCountdownTimer = setTimeout(tick, 1000);
+  }
+  function goHome() {
+    if (resumeCountdownTimer !== null) clearTimeout(resumeCountdownTimer);
+    if (gameOverTransitionTimer !== null) clearTimeout(gameOverTransitionTimer);
+    if (toothFlightTimer !== null) clearTimeout(toothFlightTimer);
+    resumeCountdownTimer = gameOverTransitionTimer = toothFlightTimer = null;
+    gameEnding = false;
+    document.querySelectorAll('.tooth-flight-clone').forEach(el => el.remove());
+    $('toothCharacter').classList.remove('final-decay');
+    $('gameOverIcon').classList.remove('land', 'broken-tooth-icon');
+    $('gameOverEyebrow').style.display = '';
+    running = false; paused = false; clearTimers(); runToken++; cleanupTargets();
+    gameScreen.classList.remove('paused', 'tooth-transferring'); pauseOverlay.classList.remove('visible', 'counting-down', 'pauseOverlay-counting-down'); gameOverOverlay.classList.remove('visible', 'transfer-pending');
+    $('toothCharacter').classList.remove('final-decay');
+    app.classList.remove('playing'); setScreen('home');
+  }
+  function showFeedback(x, y, text, penalty = false) {
+    const el = document.createElement('div'); el.className = `feedback${penalty ? ' penalty' : ''}`; el.textContent = text;
+    el.style.left = `${x}px`; el.style.top = `${y}px`; fallingLayer.appendChild(el);
+    setTimeout(() => el.remove(), 750);
+  }
+  function burst(x, y, color, count = 8) {
+    for (let i = 0; i < count; i++) {
+      const dot = document.createElement('i'); dot.className = 'particle';
+      const angle = Math.PI * 2 * i / count + Math.random() * .25;
+      const distance = 24 + Math.random() * 44;
+      dot.style.left = `${x}px`; dot.style.top = `${y}px`;
+      dot.style.setProperty('--dx', `${Math.cos(angle) * distance}px`);
+      dot.style.setProperty('--dy', `${Math.sin(angle) * distance}px`);
+      dot.style.setProperty('--particle-color', color);
+      dot.style.width = `${4 + Math.random() * 5}px`; dot.style.height = dot.style.width;
+      fallingLayer.appendChild(dot); setTimeout(() => dot.remove(), 520);
+    }
+  }
+  function flashAt(x, y) {
+    const fl = $('screenFlash'); fl.style.setProperty('--fx', `${x}px`); fl.style.setProperty('--fy', `${y}px`);
+    fl.classList.remove('flash'); void fl.offsetWidth; fl.classList.add('flash');
+  }
+  function showToast(message) {
+    const t = $('toast'); t.textContent = message; t.classList.remove('show'); void t.offsetWidth; t.classList.add('show');
+  }
+  $('startBtn').addEventListener('click', startGame);
+  $('playAgainBtn').addEventListener('click', startGame);
+  $('pauseRestartBtn').addEventListener('click', startGame);
+  $('pauseBtn').addEventListener('click', pauseGame);
+  $('resumeBtn').addEventListener('click', resumeGame);
+  $('pauseHomeBtn').addEventListener('click', goHome);
+  $('gameOverHomeBtn').addEventListener('click', goHome);
+  $('homeSoundBtn').addEventListener('click', toggleSound);
+  $('gameSoundBtn').addEventListener('click', toggleSound);
+  $('bestToggle').addEventListener('click', () => {
+    const expanded = $('bestDetails').classList.toggle('open');
+    $('personalBestCard').classList.toggle('expanded', expanded);
+    $('bestToggle').setAttribute('aria-expanded', String(expanded));
+    $('bestDetails').setAttribute('aria-hidden', String(!expanded));
+  });
+  $('resetBestBtn').addEventListener('click', () => {
+    const approved = typeof window.confirm !== 'function'
+      || window.confirm('Reset your personal best and its saved run details?');
+    if (!approved) return;
+    best = 0;
+    bestDetails = null;
+    try {
+      localStorage.removeItem('smileDefenderBest');
+      localStorage.removeItem('smileDefenderBestDetails');
+    } catch (_) { /* In-memory score and display still reset. */ }
+    bestValue.textContent = formatScore(best);
+    recordAtRunStart = 0;
+    updateHomeBestUI();
+    $('resetBestBtn').textContent = 'Personal best reset';
+  });
+  document.addEventListener('keydown', event => {
+    if (event.key === 'Escape' || event.key.toLowerCase() === 'p') {
+      if (gameOverOverlay.classList.contains('visible')) return;
+      if (resumeCountdownTimer !== null) { pauseGame(); return; }
+      if (paused) resumeGame(); else pauseGame();
+    }
+    if ((event.key === 'Enter' || event.key === ' ') && homeScreen.classList.contains('active')) {
+      if (event.target === document.body || event.target === homeScreen) { event.preventDefault(); startGame(); }
+    }
+  });
+  document.addEventListener('pointermove', event => {
+    const cursor = $('aimCursor'); cursor.style.left = `${event.clientX}px`; cursor.style.top = `${event.clientY}px`;
+  }, { passive: true });
+  function handlePageLeaving() {
+    if (running) pauseGame();
+  }
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) handlePageLeaving();
+  });
+  window.addEventListener('pagehide', handlePageLeaving);
+  window.addEventListener('blur', () => {
+    // visibilitychange is the main mobile signal; blur covers browser focus loss.
+    if (document.visibilityState !== 'visible') handlePageLeaving();
+  });
+  document.addEventListener('freeze', handlePageLeaving);
+  window.addEventListener('pageshow', () => {
+    // Never auto-resume on return from a backgrounded mobile tab.
+    if (running && paused) {
+      gameScreen.classList.add('paused');
+      pauseOverlay.classList.add('visible');
+    }
+  });
+})();
+</script>
+</body>
+</html>
